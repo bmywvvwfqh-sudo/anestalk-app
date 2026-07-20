@@ -657,7 +657,57 @@ function triggerPatientTouchResponse(item, passedTransObj) {
     showToast(`病患回應: ${patientNativeText} (${doctorChineseText})`);
 }
 
-// Clean & Reliable Native WebSpeech Engine
+// FEMALE VOICE PRIORITY MATCHING ENGINE
+const FEMALE_VOICES_MAP = {
+    zh: ['meijia', 'tingting', 'hsiaochen', 'sinji', 'yating', 'xiaoxiao', 'google 國語', 'google 普通話', 'google 普通话', 'hanhan', 'hiuga', 'hwayu'],
+    ko: ['yuna', 'sunhi', 'heami', 'google 한국어', 'microsoft sunhi', 'microsoft heami'],
+    en: ['samantha', 'karen', 'kathy', 'moira', 'victoria', 'tessa', 'ava', 'jenny', 'aria', 'zira', 'google us english'],
+    ja: ['kyoko', 'nanami', 'mizuki', 'haruka', 'google 日本語'],
+    vi: ['linh', 'hoaimy', 'google tiếng việt'],
+    th: ['kanya', 'premwadee', 'google ภาษาไทย'],
+    id: ['damayanti', 'gadis', 'google bahasa indonesia'],
+    tl: ['rosa', 'blessica', 'google filipino'],
+    fil: ['rosa', 'blessica', 'google filipino']
+};
+
+function getStrictFemaleVoice(langCode) {
+    if (!window.speechSynthesis) return null;
+    const allVoices = window.speechSynthesis.getVoices();
+    if (!allVoices || allVoices.length === 0) return null;
+
+    const prefix = (langCode || 'zh').toLowerCase().substring(0, 2);
+    const preferredNames = FEMALE_VOICES_MAP[prefix] || [];
+
+    // 1. Priority match known female voices for this language
+    for (let pName of preferredNames) {
+        const targetP = pName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const match = allVoices.find(v => {
+            const vName = v.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return vName.includes(targetP);
+        });
+        if (match) return match;
+    }
+
+    // 2. Filter voices matching target language
+    const langVoices = allVoices.filter(v => {
+        if (!v.lang) return false;
+        const vLang = v.lang.toLowerCase().replace('_', '-');
+        return vLang.startsWith(prefix) || (prefix === 'zh' && (vLang.includes('zh') || vLang.includes('cmn')));
+    });
+
+    // 3. Search female / woman / neural keywords within target language
+    const femaleKeywordMatch = langVoices.find(v => {
+        const n = v.name.toLowerCase();
+        return n.includes('female') || n.includes('woman') || n.includes('girl') || n.includes('neural') || n.includes('natural');
+    });
+
+    if (femaleKeywordMatch) return femaleKeywordMatch;
+
+    // 4. Return first voice for target language if available
+    return langVoices.length > 0 ? langVoices[0] : null;
+}
+
+// Clean & Reliable Native WebSpeech Engine (Enforced Female Voice)
 function speakText(text, langCode) {
     if (!text || !text.trim()) return;
     const cleanText = text.trim();
@@ -665,6 +715,7 @@ function speakText(text, langCode) {
 
     if (!window.speechSynthesis) {
         console.warn('Speech synthesis not supported in this browser.');
+        showToast('⚠️ 您的瀏覽器不支援語音功能');
         return;
     }
 
@@ -676,8 +727,15 @@ function speakText(text, langCode) {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = targetLang;
     utterance.rate = 0.88;
-    utterance.pitch = 1.0;
+    utterance.pitch = 1.25; // High feminine pitch
     utterance.volume = 1.0;
+
+    // Enforce Female Voice
+    const matchedFemaleVoice = getStrictFemaleVoice(targetLang);
+    if (matchedFemaleVoice) {
+        utterance.voice = matchedFemaleVoice;
+        console.log(`🔊 [Speech Female Voice] Matched: "${matchedFemaleVoice.name}" (${targetLang})`);
+    }
 
     utterance.onstart = () => {
         console.log(`🔊 [Speech Start] Lang: ${targetLang} | Text: "${cleanText.substring(0, 20)}..."`);
@@ -685,9 +743,20 @@ function speakText(text, langCode) {
 
     utterance.onerror = (e) => {
         console.error('🔊 [Speech Error]', e);
+        // Retry without specific voice object if custom voice object triggered an error
+        if (matchedFemaleVoice && e.error !== 'interrupted') {
+            try {
+                const fallbackUtterance = new SpeechSynthesisUtterance(cleanText);
+                fallbackUtterance.lang = targetLang;
+                fallbackUtterance.rate = 0.88;
+                fallbackUtterance.pitch = 1.25;
+                fallbackUtterance.volume = 1.0;
+                window.speechSynthesis.speak(fallbackUtterance);
+            } catch(err) {}
+        }
     };
 
-    showToast(`🔊 播報中 (${targetLang.split('-')[0].toUpperCase()})...`);
+    showToast(`🔊 正在使用清晰女聲播報 (${targetLang.split('-')[0].toUpperCase()})...`);
     window.speechSynthesis.speak(utterance);
 }
 
