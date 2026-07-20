@@ -553,6 +553,9 @@ async function triggerInstructionCard(cmd, passedTransObj, cardEl) {
         setTimeout(() => cardEl.classList.remove('playing'), 2500);
     }
 
+    // Unlock audio context gesture immediately on click
+    unlockAudioGesture();
+
     const targetLangCode = SPEECH_LANG_CODES[currentLanguage] || 'en-US';
     let transObj = (cmd.translations && cmd.translations[currentLanguage]) || passedTransObj;
 
@@ -565,23 +568,6 @@ async function triggerInstructionCard(cmd, passedTransObj, cardEl) {
     speakText(transObj.text, targetLangCode);
     showPatientOverlay(cmd.title, transObj.text, transObj.romaji, cmd.icon, cmd.type);
     appendDialogueMsg('doctor', '👨‍⚕️ 麻醉醫護 (指令卡片)', cmd.title, transObj.text);
-}
-
-// Trigger Patient Touch Response Click
-function triggerPatientTouchResponse(item, passedTransObj) {
-    const transObj = (item.translations && item.translations[currentLanguage]) || 
-                     (item.translations && item.translations['english']) || 
-                     passedTransObj;
-
-    const doctorChineseText = item.tw;
-    const patientNativeText = transObj.target;
-
-    // Speak in clear Chinese (zh-TW) for medical staff
-    speakText(doctorChineseText, 'zh-TW');
-
-    appendDialogueMsg('patient', '👤 病患觸控回覆', patientNativeText, doctorChineseText);
-    showPatientOverlay(doctorChineseText, patientNativeText, '', item.icon, 'general');
-    showToast(`病患回應: ${patientNativeText} (${doctorChineseText})`);
 }
 
 // FEMALE VOICE PRIORITY MATCHING ENGINE
@@ -816,6 +802,18 @@ function speakText(text, langCode) {
     synth.speak(utterance);
 }
 
+// Unlock WebSpeech Audio Context on user gesture
+function unlockAudioGesture() {
+    if (!window.speechSynthesis) return;
+    try {
+        window.speechSynthesis.resume();
+        const silentUtterance = new SpeechSynthesisUtterance('\u00a0');
+        silentUtterance.volume = 0.01;
+        silentUtterance.rate = 10;
+        window.speechSynthesis.speak(silentUtterance);
+    } catch(e) {}
+}
+
 // Append Dialogue Message Bubble
 function appendDialogueMsg(speaker, speakerTitle, originalText, translatedText) {
     const history = document.getElementById('dialogueHistory');
@@ -923,15 +921,29 @@ function updatePatientBoxLabel() {
     label.textContent = `👤 病患發言 (${names[currentLanguage] || 'Target'})`;
 }
 
+// Unlock WebSpeech Audio Context on user gesture
+function unlockAudioGesture() {
+    if (!window.speechSynthesis) return;
+    try {
+        window.speechSynthesis.resume();
+        const silentUtterance = new SpeechSynthesisUtterance('\u00a0');
+        silentUtterance.volume = 0.01;
+        silentUtterance.rate = 10;
+        window.speechSynthesis.speak(silentUtterance);
+    } catch(e) {}
+}
+
 async function handleCustomTranslate() {
     const input = document.getElementById('translateInput');
     if (!input || !input.value.trim()) return;
 
+    // 0ms Handshake: Unlock audio context on user gesture BEFORE any async await
+    unlockAudioGesture();
+
     const text = input.value.trim();
     input.value = '';
 
-    // Unlock WebSpeech audio context on user action
-    unlockSpeech();
+    showToast('🔄 正在翻譯並準備語音播報...');
 
     const targetLangCode = SPEECH_LANG_CODES[currentLanguage] || 'en-US';
     const translated = await translateAnesthesiaTextAsync(text, 'zh-TW', targetLangCode);
@@ -948,6 +960,7 @@ async function handleCustomTranslate() {
 
     // Speak translated text in patient's native language
     speakText(translated, targetLangCode);
+    showPatientOverlay(text, translated, '', 'fa-comment-medical', 'general');
     appendDialogueMsg('doctor', '👨‍⚕️ 醫護人員 (自訂口述)', text, translated);
 }
 
@@ -1034,6 +1047,9 @@ function initSpeechRecognitions() {
     doctorRecognition.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
         if (transcript) {
+            const input = document.getElementById('translateInput');
+            if (input) input.value = transcript;
+
             const targetLangCode = SPEECH_LANG_CODES[currentLanguage] || 'en-US';
             const translated = await translateAnesthesiaTextAsync(transcript, 'zh-TW', targetLangCode);
             appendDialogueMsg('doctor', '👨‍⚕️ 醫護人員 (即時口述)', transcript, translated);
@@ -1047,7 +1063,9 @@ function initSpeechRecognitions() {
         console.error('Doctor Speech Recognition Error:', event.error);
         isDoctorRecording = false;
         const btn = document.getElementById('doctorDualMicBtn');
+        const micBtn = document.getElementById('micBtn');
         if (btn) btn.classList.remove('active');
+        if (micBtn) micBtn.classList.remove('active');
 
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             if (window.location.protocol === 'file:') {
@@ -1063,7 +1081,9 @@ function initSpeechRecognitions() {
     doctorRecognition.onend = () => {
         isDoctorRecording = false;
         const btn = document.getElementById('doctorDualMicBtn');
+        const micBtn = document.getElementById('micBtn');
         if (btn) btn.classList.remove('active');
+        if (micBtn) micBtn.classList.remove('active');
     };
 
     // Patient Recognition (Target Native Language)
@@ -1114,6 +1134,7 @@ function initSpeechRecognitions() {
     const doctorBtn = document.getElementById('doctorDualMicBtn');
     if (doctorBtn) {
         doctorBtn.addEventListener('click', () => {
+            unlockAudioGesture();
             if (isDoctorRecording) {
                 doctorRecognition.stop();
             } else {
@@ -1125,6 +1146,7 @@ function initSpeechRecognitions() {
     const patientBtn = document.getElementById('patientDualMicBtn');
     if (patientBtn) {
         patientBtn.addEventListener('click', () => {
+            unlockAudioGesture();
             patientRecognition.lang = SPEECH_LANG_CODES[currentLanguage] || 'en-US';
             if (isPatientRecording) {
                 patientRecognition.stop();
@@ -1136,12 +1158,20 @@ function initSpeechRecognitions() {
 }
 
 function toggleCustomMic() {
+    unlockAudioGesture();
     if (!doctorRecognition) {
         alert('您的瀏覽器未支援即時語音辨識。');
         return;
     }
-    if (isDoctorRecording) doctorRecognition.stop();
-    else doctorRecognition.start();
+    const micBtn = document.getElementById('micBtn');
+    if (isDoctorRecording) {
+        doctorRecognition.stop();
+        if (micBtn) micBtn.classList.remove('active');
+    } else {
+        doctorRecognition.start();
+        if (micBtn) micBtn.classList.add('active');
+        showToast('🎙️ 正在聆聽您的口述內容...');
+    }
 }
 
 function showToast(msg) {
