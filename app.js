@@ -190,79 +190,7 @@ const PRESET_COMMANDS = {
     ]
 };
 
-// Patient Touch Response Cards
-const PATIENT_TOUCH_RESPONSES = [
-    {
-        id: 'resp_pain_yes',
-        icon: 'fa-face-sad-tear',
-        tw: '病患反應：傷口很痛！',
-        translations: {
-            korean: { target: '아파요! (痛)', twText: '病患反應：傷口很痛！' },
-            english: { target: 'Painful! (痛)', twText: 'Patient says: In pain!' },
-            japanese: { target: '痛いです！ (痛)', twText: '病患反應：傷口很痛！' },
-            vietnamese: { target: 'Rất đau! (痛)', twText: 'Bệnh nhân nói: Vết thương rất đau!' },
-            thai: { target: 'เจ็บมาก! (痛)', twText: 'คนไข้บอก: เจ็บแผลมาก!' },
-            indonesian: { target: 'Sangat sakit! (痛)', twText: 'Pasien berkata: Sangat sakit!' },
-            filipino: { target: 'Napakasakit! (痛)', twText: 'Pasabi ng pasyente: Napakasakit!' }
-        }
-    },
-    {
-        id: 'resp_pain_no',
-        icon: 'fa-face-smile',
-        tw: '病患反應：傷口不太會痛。',
-        translations: {
-            korean: { target: '안 아파요 (不痛)', twText: '病患反應：傷口不太會痛。' },
-            english: { target: 'No pain (不痛)', twText: 'Patient says: No pain.' },
-            japanese: { target: '痛くないです (不痛)', twText: '病患反應：傷口不太會痛。' },
-            vietnamese: { target: 'Không đau (不痛)', twText: 'Bệnh nhân nói: Không đau.' },
-            thai: { target: 'ไม่เจ็บ (不痛)', twText: 'คนไข้บอก: ไม่เจ็บ' },
-            indonesian: { target: 'Tidak sakit (不痛)', twText: 'Pasien berkata: Tidak sakit.' },
-            filipino: { target: 'Hindi masakit (不痛)', twText: 'Pasabi ng pasyente: Hindi masakit.' }
-        }
-    },
-    {
-        id: 'resp_nausea_yes',
-        icon: 'fa-face-dizzy',
-        tw: '病患反應：想吐、頭暈。',
-        translations: {
-            korean: { target: '구토/어지러움 (想吐)', twText: '病患反應：覺得想吐、頭暈。' },
-            english: { target: 'Nauseous/Dizzy (想吐)', twText: 'Patient says: Nauseous and dizzy.' },
-            japanese: { target: '気持ち悪い/眩暈 (想吐)', twText: '病患反應：覺得想吐、頭暈。' },
-            vietnamese: { target: 'Buồn nôn/Chóng mặt', twText: 'Bệnh nhân nói: Buồn nôn, chóng mặt.' },
-            thai: { target: 'คลื่นไส้/เวียนหัว', twText: 'คนไข้บอก: รู้สึกคลื่นไส้ เวียนหัว' },
-            indonesian: { target: 'Mual/Pusing (想吐)', twText: 'Pasien berkata: Mual dan pusing.' },
-            filipino: { target: 'Kuhilo/Duduwal', twText: 'Pasabi ng pasyente: Nahihilo, naduduwal.' }
-        }
-    },
-    {
-        id: 'resp_cold_yes',
-        icon: 'fa-temperature-arrow-down',
-        tw: '病患反應：覺得很冷、發抖。',
-        translations: {
-            korean: { target: '춥습니다 (冷)', twText: '病患反應：覺得很冷、全身發抖。' },
-            english: { target: 'Feeling cold (冷)', twText: 'Patient says: Feeling very cold.' },
-            japanese: { target: '寒いです (冷)', twText: '病患反應：覺得很冷、全身發抖。' },
-            vietnamese: { target: 'Rất lạnh (冷)', twText: 'Bệnh nhân nói: Rất lạnh.' },
-            thai: { target: 'หนาวมาก (冷)', twText: 'คนไข้บอก: รู้สึกหนาวมาก' },
-            indonesian: { target: 'Sangat dingin (冷)', twText: 'Pasien berkata: Sangat dingin.' },
-            filipino: { target: 'Napakaginaw (冷)', twText: 'Pasabi ng pasyente: Napakaginaw.' }
-        }
-    },
-    {
-        id: 'resp_ok',
-        icon: 'fa-thumbs-up',
-        tw: '病患反應：聽懂了、好的。',
-        translations: {
-            korean: { target: '알겠습니다 / OK', twText: '病患反應：聽懂了，沒問題。' },
-            english: { target: 'Understood / OK', twText: 'Patient says: Understood / OK.' },
-            japanese: { target: '分かりました / OK', twText: '病患反應：聽懂了，沒問題。' },
-            vietnamese: { target: 'Đã hiểu / OK', twText: 'Bệnh nhân nói: Đã hiểu.' },
-            thai: { target: 'เข้าใจแล้ว / OK', twText: 'คนไข้บอก: เข้าใจแล้ว' },
-            indonesian: { target: 'Paham / OK', twText: 'Pasien berkata: Paham / OK.' },
-            filipino: { target: 'Naiintindihan / OK', twText: 'Pasabi ng pasyente: Naiintindihan.' }
-        }
-    }
-];
+
 
 // State Variables
 let currentLanguage = 'korean';
@@ -293,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function initApp() {
     initVoices();
     renderAllGrids();
-    renderTouchCards();
     setupEventListeners();
     initSpeechRecognitions();
     setupCustomDbHandlers();
@@ -919,7 +846,6 @@ function setupEventListeners() {
             currentLanguage = btn.dataset.lang;
 
             renderAllGrids();
-            renderTouchCards();
             updatePatientBoxLabel();
             showToast(`已切換語言：${btn.innerText.trim()}`);
         });
